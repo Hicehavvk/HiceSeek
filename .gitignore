@@ -1,0 +1,44 @@
+# ========== 必须忽略：密钥与敏感信息 ==========
+key.env
+*.env
+!key.env.example
+
+# ========== 必须忽略：运行时数据 ==========
+sessions/
+history/
+output/
+token_log.jsonl
+
+# ========== 必须忽略：Python 环境 ==========
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.conda/
+
+# ========== 必须忽略：编辑器与 IDE ==========
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ========== 必须忽略：操作系统 ==========
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ========== 建议忽略：临时与备份 ==========
+*.log
+*.bak
+*.tmp
+_document/
+
+# ========== 建议忽略：构建产物 ==========
+build/
+dist/
+*.egg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
