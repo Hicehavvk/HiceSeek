@@ -33,7 +33,7 @@ desktop.ini
 *.log
 *.bak
 *.tmp
-_document/
+_back_up/
 
 # ========== 建议忽略：构建产物 ==========
 build/
