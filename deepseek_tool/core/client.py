@@ -5,7 +5,7 @@
 # deepseek_tool/core/client.py
 from openai import OpenAI
 from .config import Config
-
+from pathlib import Path
 
 class DeepSeekClient:
     def __init__(self, config: Config):
@@ -94,3 +94,39 @@ class DeepSeekClient:
             return {"content": content, "reasoning": reasoning, "usage": usage}, f"[流中断] {e}"
 
         return {"content": content, "reasoning": reasoning, "usage": usage}, None
+    
+def encode_image_data_url(path) -> str:
+    """将本地图片文件编码为 data URL 字符串。"""
+    import base64
+    path = Path(path)
+    suffix = path.suffix.lower().lstrip(".")
+    mime = {
+        "jpg": "image/jpeg",
+        "jpeg": "image/jpeg",
+        "png": "image/png",
+        "gif": "image/gif",
+        "webp": "image/webp",
+    }.get(suffix, "image/jpeg")
+    with open(path, "rb") as f:
+        b64 = base64.b64encode(f.read()).decode("utf-8")
+    return f"data:{mime};base64,{b64}"
+
+
+def grab_clipboard_image_data_url():
+    """从剪贴板读取图片并编码为 data URL。返回 (data_url, error)。"""
+    try:
+        from PIL import ImageGrab
+    except ImportError:
+        return None, "缺少 Pillow 依赖，请执行 pip install Pillow"
+    import io
+    import base64
+    img = ImageGrab.grabclipboard()
+    if img is None:
+        return None, "剪贴板中没有图片。"
+    if isinstance(img, list):
+        return None, "剪贴板中是文件路径列表，请改用 /image <路径>。"
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+    return f"data:image/png;base64,{b64}", None
+

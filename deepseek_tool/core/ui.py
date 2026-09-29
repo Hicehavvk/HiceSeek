@@ -38,6 +38,7 @@ CHAT_HELP = """[bold]聊天模式命令[/bold]
   [cyan]/anima[/cyan]                切换到 anima 管道
   [cyan]/minimax[/cyan]              切换到 minimax 管道
   [cyan]/view[/cyan]                 切换到 view 模式
+  [cyan]/reverse[/cyan]              切换到 reverse 模式
   [cyan]/new[/cyan]                  新建会话
   [cyan]/sessions[/cyan]             列出所有会话
   [cyan]/sessions --mode <m>[/cyan]  按模式过滤
@@ -59,6 +60,7 @@ PIPE_HELP_TMPL = """[bold]{label} 管道命令[/bold]
   [magenta]/anima[/magenta]                切换到 anima 管道
   [magenta]/minimax[/magenta]              切换到 minimax 管道
   [magenta]/view[/magenta]                 切换到 view 模式
+  [magenta]/reverse[/magenta]              切换到 reverse 模式
   [magenta]/new[/magenta]                  新建会话
   [magenta]/sessions[/magenta]             列出所有会话
   [magenta]/load <ID>[/magenta]            加载指定会话
@@ -91,12 +93,36 @@ VIEW_HINT = ("[dim]命令: /list 列表 | /latest 最近 | /id <ID> 查看 | "
              "/reasoning 切换思考 | /chat /anima /minimax 切换 | "
              "/help 帮助 | /exit 退出[/dim]")
 
+REVERSE_HELP = """[bold]Reverse 模式命令[/bold]
+
+  [bright_blue]/image <路径>[/bright_blue]            从文件读取图片进行反推
+  [bright_blue]/paste[/bright_blue]                  从剪贴板读取图片进行反推
+  [bright_blue]/target anima|minimax[/bright_blue]   切换反推目标格式
+  [bright_blue]/chat[/bright_blue]                   切换到聊天模式
+  [bright_blue]/anima[/bright_blue]                  切换到 anima 管道
+  [bright_blue]/minimax[/bright_blue]                切换到 minimax 管道
+  [bright_blue]/view[/bright_blue]                   切换到 view 模式
+  [bright_blue]/new[/bright_blue]                    新建会话
+  [bright_blue]/sessions[/bright_blue]               列出所有会话
+  [bright_blue]/load <ID>[/bright_blue]              加载指定会话
+  [bright_blue]/title <标题>[/bright_blue]           重命名当前会话
+  [bright_blue]/undo[/bright_blue]                   撤销最近 1 轮
+  [bright_blue]/trim <N>[/bright_blue]               只保留最近 N 轮
+  [bright_blue]/save[/bright_blue]                   导出当前会话
+  [bright_blue]/cost[/bright_blue]                   查看当前会话 token 与成本
+  [bright_blue]/thinking on|off[/bright_blue]        切换深度思考
+  [bright_blue]/effort low|high|max[/bright_blue]    设置思考强度
+  [bright_blue]/help[/bright_blue]                   显示本帮助
+  [bright_blue]/exit[/bright_blue]                   退出程序"""
+
 
 def print_help_for_mode(mode: str):
     if mode == "chat":
         console.print(Panel(CHAT_HELP, title="帮助", border_style="cyan"))
     elif mode == "view":
         console.print(Panel(VIEW_HELP, title="帮助", border_style="yellow"))
+    elif mode == "reverse":
+        console.print(Panel(REVERSE_HELP, title="帮助", border_style="bright_blue"))
     else:
         label = {"anima": "anima-2.9B", "minimax": "MiniMax-H3"}.get(mode, mode)
         console.print(Panel(

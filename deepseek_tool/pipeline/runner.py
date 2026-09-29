@@ -7,7 +7,7 @@ import shlex
 
 from .anima import ANIMA_SYSTEM, validate_anima, split_anima_blocks
 from .minimax import MINIMAX_SYSTEM, validate_minimax
-
+from .reverse import REVERSE_ANIMA_SYSTEM, REVERSE_MINIMAX_SYSTEM
 
 PIPELINES = {
     "anima": {
@@ -21,6 +21,12 @@ PIPELINES = {
         "validate": validate_minimax,
         "blocks": None,
         "label": "MiniMax-H3",
+    },
+    "reverse": {
+        "system": REVERSE_ANIMA_SYSTEM,
+        "validate": None,
+        "blocks": None,
+        "label": "reverse",
     },
 }
 

@@ -172,6 +172,55 @@ def handle_command(cmd_line: str, ctx: dict) -> dict:
             "output": f"[dim]已读取 {path_str}（{len(content)} 字符）。[/dim]",
         }
 
+    # ---------- 图片输入（仅 reverse 模式有效，其他模式也可触发） ----------
+    if cmd == "/image":
+        from ..core.client import encode_image_data_url
+        from ..pipeline.runner import parse_file_arg
+        path_str, extra = parse_file_arg(arg)
+        if path_str is None:
+            return {"handled": True, "output": f"[red]{extra}[/red]"}
+        p = Path(path_str)
+        if not p.exists():
+            return {"handled": True, "output": f"[red]文件不存在: {path_str}[/red]"}
+        try:
+            data_url = encode_image_data_url(p)
+        except Exception as e:
+            return {"handled": True, "output": f"[red]读取图片失败: {e}[/red]"}
+        label = f"[image] {path_str}" + (f" | {extra}" if extra else "")
+        return {
+            "handled": True,
+            "trigger_input": extra or "请反推这张图片。",
+            "trigger_image_data_url": data_url,
+            "trigger_label": label,
+            "output": f"[dim]已读取图片 {path_str}。[/dim]",
+        }
+
+    if cmd == "/paste":
+        from ..core.client import grab_clipboard_image_data_url
+        data_url, err = grab_clipboard_image_data_url()
+        if err:
+            return {"handled": True, "output": f"[red]{err}[/red]"}
+        return {
+            "handled": True,
+            "trigger_input": "请反推这张图片。",
+            "trigger_image_data_url": data_url,
+            "output": "[dim]已从剪贴板读取图片。[/dim]",
+        }
+
+    if cmd == "/target":
+        from ..pipeline.reverse import REVERSE_ANIMA_SYSTEM, REVERSE_MINIMAX_SYSTEM
+        if arg == "anima":
+            session.system_prompt = REVERSE_ANIMA_SYSTEM
+            sm.save(session)
+            return {"handled": True, "output": "[green]已切换到 anima 反推目标。[/green]"}
+        elif arg == "minimax":
+            if not REVERSE_MINIMAX_SYSTEM:
+                return {"handled": True, "output": "[yellow]minimax 反推目标尚未实现，保留当前目标。[/yellow]"}
+            session.system_prompt = REVERSE_MINIMAX_SYSTEM
+            sm.save(session)
+            return {"handled": True, "output": "[green]已切换到 minimax 反推目标。[/green]"}
+        return {"handled": True, "output": "[red]用法: /target anima|minimax[/red]"}
+
     # ---------- 运行时参数 ----------
     if cmd == "/thinking":
         if arg == "on":

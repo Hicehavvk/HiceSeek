@@ -17,6 +17,7 @@ from ..core.ui import (
     stream_callback, console, render_session, print_view_hint,
 )
 from ..pipeline.runner import PIPELINES
+from ..pipeline.reverse import REVERSE_ANIMA_SYSTEM
 
 
 def parse_args():
@@ -29,7 +30,7 @@ def parse_args():
     parser.add_argument("--title", help="新建会话时使用的标题")
     parser.add_argument(
         "--mode",
-        choices=["chat", "anima", "minimax", "view"],
+        choices=["chat", "anima", "minimax", "view", "reverse"],
         help="启动后进入的模式，默认 chat",
     )
     return parser.parse_args()
@@ -50,6 +51,7 @@ def _default_title(mode: str) -> str:
         "chat": "新会话",
         "anima": "anima 会话",
         "minimax": "minimax 会话",
+        "reverse": "反推会话",
     }.get(mode, "新会话")
 
 
@@ -70,17 +72,29 @@ def _prompt_for_mode(mode: str, session) -> str:
         return f"\n[bold green]秦老师[/bold green] [dim]({session.title})[/dim] > "
     if mode == "view":
         return "\n[bold yellow](view)[/bold yellow] > "
+    if mode == "reverse":
+        return f"\n[bold bright_blue](reverse)[/bold bright_blue] [dim]({session.title})[/dim] > "
     label = PIPELINES[mode]["label"] if mode in PIPELINES else mode
     return f"\n[bold magenta]({label})[/bold magenta] [dim]({session.title})[/dim] > "
 
 
 def _process_input(mode: str, session, user_input: str,
-                   config, client, sm: SessionManager) -> None:
+                   config, client, sm: SessionManager,
+                   image_data_url: str | None = None) -> None:
     """统一的输入处理：聊天无校验，管道有校验 + 提示。"""
     call_messages = [{"role": "system", "content": session.system_prompt}]
     for msg in session.messages:
         call_messages.append({"role": msg["role"], "content": msg["content"]})
-    call_messages.append({"role": "user", "content": user_input})
+
+    if image_data_url:
+        user_content = [
+            {"type": "text", "text": user_input},
+            {"type": "image_url", "image_url": {"url": image_data_url}},
+        ]
+    else:
+        user_content = user_input
+
+    call_messages.append({"role": "user", "content": user_content})
 
     console.print("[dim]正在生成...[/dim]")
     console.print()
@@ -94,7 +108,7 @@ def _process_input(mode: str, session, user_input: str,
 
     output = result["content"]
 
-    # 保存消息
+    # 保存消息（图片不存，只存文本占位）
     session.messages.append({
         "role": "user",
         "content": user_input,
@@ -115,8 +129,8 @@ def _process_input(mode: str, session, user_input: str,
 
     sm.save(session)
 
-    # 管道模式：校验 + 上下文提示
-    if mode != "chat":
+    # 管道模式（anima / minimax）：校验 + 上下文提示
+    if mode in ("anima", "minimax"):
         pipe = PIPELINES.get(mode)
         if pipe and pipe.get("validate"):
             errors = pipe["validate"](output)
@@ -174,6 +188,19 @@ def main():
         console.print("[dim]已进入 view 模式。[/dim]")
         print_help_for_mode("view")
         print_view_hint()
+    elif current_mode == "reverse":
+        sessions["reverse"] = sm.new_session(
+            system_prompt=REVERSE_ANIMA_SYSTEM,
+            model=config.model,
+            mode="reverse",
+            title=_default_title("reverse"),
+        )
+        console.print(
+            f"[dim]已新建 reverse 会话: "
+            f"{sessions['reverse'].title} ({sessions['reverse'].id})[/dim]"
+        )
+    elif args.session:
+        ...
     elif args.session:
         loaded = sm.load(args.session)
         if loaded is None:
@@ -218,7 +245,7 @@ def main():
             continue
 
         # ---------- 模式切换（四模式通用） ----------
-        if user_input in ("/chat", "/anima", "/minimax", "/view"):
+        if user_input in ("/chat", "/anima", "/minimax", "/view", "/reverse"):
             target = user_input[1:]
             if target == current_mode:
                 console.print(f"[dim]已经在 {target} 模式。[/dim]")
@@ -305,6 +332,7 @@ def main():
                 _process_input(
                     current_mode, sessions[current_mode],
                     result["trigger_input"], config, client, sm,
+                    image_data_url=result.get("trigger_image_data_url"),
                 )
             if result.get("exit"):
                 break
